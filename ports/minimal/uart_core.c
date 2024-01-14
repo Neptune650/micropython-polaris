@@ -19,6 +19,10 @@ int mp_hal_stdin_rx_chr(void) {
     #if MICROPY_MIN_USE_STDOUT
     int r = read(STDIN_FILENO, &c, 1);
     (void)r;
+    
+    if (c == 0 || c == '\n')
+        c = '\r';
+
     #elif MICROPY_MIN_USE_STM32_MCU
     // wait for RXNE
     while ((USART1->SR & (1 << 5)) == 0) {

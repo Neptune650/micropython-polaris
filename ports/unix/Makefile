@@ -31,7 +31,7 @@ QSTR_DEFS += qstrdefsport.h
 QSTR_GLOBAL_DEPENDENCIES += $(VARIANT_DIR)/mpconfigvariant.h
 
 # OS name, for simple autoconfig
-UNAME_S := $(shell uname -s)
+UNAME_S := Polaris
 
 # include py core make definitions
 include $(TOP)/py/py.mk
@@ -112,6 +112,10 @@ LDFLAGS += $(LDFLAGS_MOD) $(LDFLAGS_ARCH) -lm $(LDFLAGS_EXTRA)
 # Flags to link with pthread library
 LIBPTHREAD = -lpthread
 
+ifeq ($(UNAME_S), Polaris)
+CC = x86_64-polaris-gcc
+endif
+
 ifeq ($(MICROPY_FORCE_32BIT),1)
 # Note: you may need to install i386 versions of dependency packages,
 # starting with linux-libc-dev:i386
@@ -122,20 +126,8 @@ endif
 endif
 endif
 
-ifeq ($(MICROPY_USE_READLINE),1)
-INC += -I$(TOP)/shared/readline
-CFLAGS += -DMICROPY_USE_READLINE=1
-SHARED_SRC_C_EXTRA += readline/readline.c
-endif
 ifeq ($(MICROPY_PY_TERMIOS),1)
 CFLAGS += -DMICROPY_PY_TERMIOS=1
-endif
-ifeq ($(MICROPY_PY_SOCKET),1)
-CFLAGS += -DMICROPY_PY_SOCKET=1
-endif
-ifeq ($(MICROPY_PY_THREAD),1)
-CFLAGS += -DMICROPY_PY_THREAD=1 -DMICROPY_PY_THREAD_GIL=0
-LDFLAGS += $(LIBPTHREAD)
 endif
 
 ifeq ($(MICROPY_PY_SSL),1)
@@ -145,9 +137,6 @@ endif
 endif
 
 # If the variant enables it, enable modbluetooth.
-ifeq ($(MICROPY_PY_BLUETOOTH),1)
-ifeq ($(MICROPY_BLUETOOTH_BTSTACK),1)
-HAVE_LIBUSB := $(shell (which pkg-config > /dev/null && pkg-config --exists libusb-1.0) 2>/dev/null && echo '1')
 
 # Figure out which BTstack transport to use.
 ifeq ($(HAVE_LIBUSB),1)

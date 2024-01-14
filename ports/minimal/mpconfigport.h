@@ -30,13 +30,13 @@ typedef long mp_off_t;
 // We need to provide a declaration/definition of alloca()
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME "minimal"
-#define MICROPY_HW_MCU_NAME "unknown-cpu"
+#define MICROPY_HW_BOARD_NAME "polaris"
+#if defined(__x86_64__)
+#define MICROPY_HW_MCU_NAME "x86_64-cpu"
+#endif
 
-#ifdef __linux__
 #define MICROPY_MIN_USE_STDOUT (1)
 #define MICROPY_HEAP_SIZE      (25600) // heap size 25 kilobytes
-#endif
 
 #ifdef __thumb__
 #define MICROPY_MIN_USE_CORTEX_CPU (1)
