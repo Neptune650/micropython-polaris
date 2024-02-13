@@ -1,6 +1,7 @@
-# Test creating an SSL connection with specified ciphers.
+# Test creating an SSL connection and getting the peer certificate.
 
 try:
+    import io
     import os
     import socket
     import tls
@@ -13,17 +14,20 @@ PORT = 8000
 # These are test certificates. See tests/README.md for details.
 cert = cafile = "ec_cert.der"
 key = "ec_key.der"
-with open(cafile, "rb") as f:
-    cadata = f.read()
-with open(key, "rb") as f:
-    keydata = f.read()
 
 try:
-    os.stat(cafile)
-    os.stat(key)
+    with open(cafile, "rb") as f:
+        cadata = f.read()
+    with open(key, "rb") as f:
+        key = f.read()
 except OSError:
     print("SKIP")
     raise SystemExit
+
+
+def verify_callback(cert, depth):
+    print(cert.hex())
+    return 0
 
 
 # Server
@@ -36,9 +40,8 @@ def instance0():
     multitest.next()
     s2, _ = s.accept()
     server_ctx = tls.SSLContext(tls.PROTOCOL_TLS_SERVER)
-    server_ctx.load_cert_chain(cadata, keydata)
+    server_ctx.load_cert_chain(cadata, key)
     s2 = server_ctx.wrap_socket(s2, server_side=True)
-    assert isinstance(s2.cipher(), tuple)
     print(s2.read(16))
     s2.write(b"server to client")
     s2.close()
@@ -47,14 +50,17 @@ def instance0():
 
 # Client
 def instance1():
+    s_test = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
+    if not hasattr(s_test, "verify_callback"):
+        print("SKIP")
+        raise SystemExit
+
     multitest.next()
     s = socket.socket()
     s.connect(socket.getaddrinfo(IP, PORT)[0][-1])
     client_ctx = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
-    ciphers = client_ctx.get_ciphers()
-    assert "TLS-ECDHE-ECDSA-WITH-AES-128-CBC-SHA256" in ciphers
-    client_ctx.set_ciphers(["TLS-ECDHE-ECDSA-WITH-AES-128-CBC-SHA256"])
     client_ctx.verify_mode = tls.CERT_REQUIRED
+    client_ctx.verify_callback = verify_callback
     client_ctx.load_verify_locations(cadata)
     s = client_ctx.wrap_socket(s, server_hostname="micropython.local")
     s.write(b"client to server")
